@@ -50,10 +50,14 @@ const execute = async command => {
 
   console.warn(`Welcome, ${roleName} at ${accountId}!`);
 
-  spawn(command, {
+  const child = spawn(command, {
     env,
     stdio: "inherit",
     shell: process.env.SHELL,
+  });
+
+  child.on("exit", code => {
+    process.exit(code);
   });
 };
 
