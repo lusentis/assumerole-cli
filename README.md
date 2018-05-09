@@ -1,1 +1,3 @@
 # assumerole-cli
+
+MIT

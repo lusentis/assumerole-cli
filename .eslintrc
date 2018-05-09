@@ -1,0 +1,18 @@
+{
+  "parser": "babel-eslint",
+  "extends": ["xo-space/esnext"],
+  "plugins": ["prettier"],
+  "rules": {
+    "prettier/prettier": [
+      "error",
+      {
+        "singleQuote": false,
+        "trailingComma": "es5"
+      }
+    ]
+  },
+  "env": {
+    "es6": true,
+    "node": true
+  }
+}
