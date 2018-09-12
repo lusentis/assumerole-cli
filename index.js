@@ -3,7 +3,7 @@
 const program = require("commander");
 const AWS = require("aws-sdk");
 
-const { spawn } = require("child_process");
+const { exec } = require("child_process");
 
 const makeRoleArn = ({ roleName, accountId }) =>
   `arn:aws:iam::${accountId}:role/${roleName}`;
@@ -50,7 +50,7 @@ const execute = async command => {
 
   console.warn(`Welcome, ${roleName} at ${accountId}!`);
 
-  const child = spawn(command, {
+  const child = exec(command, {
     env,
     stdio: "inherit",
     shell: process.env.SHELL,
