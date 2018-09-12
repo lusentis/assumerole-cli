@@ -18,6 +18,12 @@ assumerole --role-arn arn:aws:iam::00000000000:role/MyRole
 
 # Specify Account Id and Role Name:
 assumerole --account-id 00000000000 --role-name MyRole
+
+# Specify an command:
+assumerole --role-arn arn:aws:iam::00000000000:role/MyRole -c aws s3 ls
+
+# Specify an command with --arguments:
+assumerole --role-arn arn:aws:iam::00000000000:role/MyRole -c bash -- --version
 ```
 
 An optional `-c <command>` can be provided.

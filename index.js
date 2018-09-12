@@ -3,7 +3,8 @@
 const program = require("commander");
 const AWS = require("aws-sdk");
 
-const { exec } = require("child_process");
+const { spawn } = require("child_process");
+const { version } = require("./package.json");
 
 const makeRoleArn = ({ roleName, accountId }) =>
   `arn:aws:iam::${accountId}:role/${roleName}`;
@@ -26,6 +27,7 @@ const execute = async command => {
   let roleArn = program.roleArn;
   let roleName = program.roleName;
   let accountId = program.accountId;
+  const args = program.args || [];
 
   if (!roleArn) {
     if (!roleName || !accountId) {
@@ -49,8 +51,9 @@ const execute = async command => {
   delete env.AWS_PROFILE;
 
   console.warn(`Welcome, ${roleName} at ${accountId}!`);
+  console.warn(`Running command: $ ${command} ${args.join(" ")}`);
 
-  const child = exec(command, {
+  const child = spawn(command, args, {
     env,
     stdio: "inherit",
     shell: process.env.SHELL,
@@ -75,6 +78,7 @@ const printError = e => {
 const defaultShellCommand = () => process.env.SHELL;
 
 program
+  .version(version)
   .option(
     "-c, --cmd <cmd>",
     "Execute <cmd> using the default shell",
@@ -90,8 +94,26 @@ program
     "-a, --account-id <AccountId>",
     "Account ID where Role is defined (mandatory if you specify --role-name)",
     /^\d{12}$/
-  )
-  .parse(process.argv);
+  );
+
+program.on("--help", function() {
+  console.log("");
+  console.log("  Examples:");
+  console.log("");
+  console.log("    $ assumerole --account-id 00000000000 --role-name MyRole");
+  console.log(
+    "    $ assumerole --role-arn arn:aws:iam::00000000000:role/MyRole"
+  );
+  console.log(
+    "    $ assumerole --role-arn arn:aws:iam::00000000000:role/MyRole -c aws s3 ls"
+  );
+  console.log(
+    "    $ assumerole --role-arn arn:aws:iam::00000000000:role/MyRole -c bash -- --version"
+  );
+  console.log("");
+});
+
+program.parse(process.argv);
 
 if (!program.cmd) {
   program.cmd = process.env.SHELL;
