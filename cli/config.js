@@ -1,17 +1,60 @@
 const path = require("path");
 const fs = require("fs");
 
-const configFileLocation = path.resolve(process.env.HOME, ".assumerole.json");
-const configFileContents = fs.readFileSync(configFileLocation, "utf-8");
-const userConfiguration = JSON.parse(configFileContents);
+const opn = require("opn");
+const EDITOR = process.env.EDITOR || "code";
 
 const providers = {
   google: require("./providers/google"),
 };
 
-const config = {
-  providers,
-  ...userConfiguration,
+const getDefaultLocation = () =>
+  path.resolve(process.env.HOME, ".assumerole.json");
+
+const openEditor = async ({ overwrite }) => {
+  const configFileLocation = getDefaultLocation();
+  const templateLocation = path.join(__dirname, "configTemplate.json");
+
+  if (overwrite || !fs.existsSync(configFileLocation)) {
+    const configTemplate = fs.readFileSync(templateLocation);
+    fs.writeFileSync(configFileLocation, configTemplate);
+  }
+
+  console.log("Opening file for editing:", configFileLocation);
+  opn(configFileLocation, { app: EDITOR });
 };
 
-module.exports = config;
+const readFromFile = configFileLocation => {
+  let configFileContents;
+  let userConfiguration;
+
+  try {
+    configFileContents = fs.readFileSync(configFileLocation, "utf-8");
+  } catch (e) {
+    console.error("Configuration file not found at path", configFileLocation);
+    console.error(`Run "configure" to create a new one.`);
+    process.exit(3);
+  }
+
+  try {
+    userConfiguration = JSON.parse(configFileContents);
+  } catch (e) {
+    console.error("Fatal error: config file contains invalid JSON");
+    process.exit(1);
+  }
+
+  return userConfiguration;
+};
+
+const load = () => {
+  const configPath = getDefaultLocation();
+  const userConfiguration = readFromFile(configPath);
+
+  const config = {
+    providers,
+    ...userConfiguration,
+  };
+  return config;
+};
+
+module.exports = { getDefaultLocation, load, openEditor };

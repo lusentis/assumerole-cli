@@ -4,7 +4,9 @@ const program = require("commander");
 const AWS = require("aws-sdk");
 
 const { spawn } = require("child_process");
+
 const { version } = require("./package.json");
+const { openEditor } = require("./cli/config");
 
 const makeRoleArn = ({ roleName, accountId }) =>
   `arn:aws:iam::${accountId}:role/${roleName}`;
@@ -77,8 +79,26 @@ const printError = e => {
 
 const defaultShellCommand = () => process.env.SHELL;
 
+program.version(version);
+
+// configure command
 program
-  .version(version)
+  .command("configure")
+  .description("Creates an empty configuration file")
+  .option("-o, --overwrite", "replaces the existing configuration file")
+  .action(opts =>
+    openEditor({
+      overwrite: Boolean(opts.overwrite),
+    }).catch(e => {
+      printError(e);
+      process.exit(1);
+    })
+  );
+
+// assumerole (default) command
+program
+  .command("assumerole")
+  .description("Assumes the specified role")
   .option(
     "-c, --cmd <cmd>",
     "Execute <cmd> using the default shell",
@@ -94,6 +114,12 @@ program
     "-a, --account-id <AccountId>",
     "Account ID where Role is defined (mandatory if you specify --role-name)",
     /^\d{12}$/
+  )
+  .action(() =>
+    execute(program.cmd).catch(e => {
+      printError(e);
+      process.exit(1);
+    })
   );
 
 program.on("--help", function() {
@@ -118,8 +144,3 @@ program.parse(process.argv);
 if (!program.cmd) {
   program.cmd = process.env.SHELL;
 }
-
-execute(program.cmd).catch(e => {
-  printError(e);
-  process.exit(1);
-});

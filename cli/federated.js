@@ -1,7 +1,7 @@
 const AWS = require("aws-sdk");
 const opn = require("opn");
 
-const config = require("./config");
+const config = require("./config").load();
 const serverOnce = require("./serverOnce");
 const { getAccountAlias } = require("./account");
 
