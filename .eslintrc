@@ -1,8 +1,10 @@
 {
   "parser": "babel-eslint",
-  "extends": ["xo-space/esnext"],
+  "extends": "eslint:recommended",
   "plugins": ["prettier"],
   "rules": {
+    "no-undef": "error",
+    "no-console": "off",
     "prettier/prettier": [
       "error",
       {
