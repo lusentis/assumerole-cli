@@ -1,9 +1,10 @@
 const AWS = require("aws-sdk");
+const debug = require("debug")("assumerole");
 
 const getAccountInfo = async () => {
   const iam = new AWS.IAM({});
   const info = await iam.getAccountSummary().promise();
-  console.log({ info });
+  debug({ info });
   return info;
 };
 

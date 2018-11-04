@@ -1,4 +1,6 @@
 const AWS = require("aws-sdk");
+const { print } = require("./theme");
+const debug = require("debug")("assumerole");
 
 const flatten = list =>
   list.reduce((a, b) => a.concat(Array.isArray(b) ? flatten(b) : b), []);
@@ -15,7 +17,7 @@ const resourceDoesNotcontainWildcards = resource =>
   resource.indexOf("*") === -1;
 
 const filterCustomerUniquePolicyARNs = ({ policiesARNs }) => {
-  console.log({ policiesARNs });
+  debug({ policiesARNs });
 
   const policiesList = flatten(policiesARNs)
     .map(p => p.PolicyArn)
@@ -58,7 +60,7 @@ const listAssumableRoles = async () => {
   const iam = new AWS.IAM({});
   const currentRoleName = await getCallerRoleName();
 
-  console.log("Current role is:", currentRoleName);
+  console.log(print.heading("You are authenticated as:", currentRoleName));
 
   const allRolePolicies = await iam
     .listAttachedRolePolicies({ RoleName: currentRoleName })
@@ -67,17 +69,17 @@ const listAssumableRoles = async () => {
   const policiesARNs = [...allRolePolicies.AttachedPolicies];
   const uniquePoliciesARNs = filterCustomerUniquePolicyARNs({ policiesARNs });
 
-  console.log({ uniquePoliciesARNs });
+  debug({ uniquePoliciesARNs });
 
   const documents = await Promise.all(
     uniquePoliciesARNs.map(getPolicyDocument({ iam }))
   );
 
-  console.log({ documents });
+  debug({ documents });
 
   const statements = flatten(documents.map(d => d.Statement));
 
-  console.log({ statements });
+  debug({ statements });
 
   const rolesARNs = flatten(
     statements
@@ -88,14 +90,19 @@ const listAssumableRoles = async () => {
 
   const uniqueRolesARNs = [...new Set(rolesARNs)];
 
-  console.log({ uniqueRolesARNs });
+  debug({ uniqueRolesARNs });
 
   const rolesInfo = uniqueRolesARNs
     .map(arn => {
       const tokens = /arn:aws:iam::(\d{12}):role\/(.*)/i.exec(arn);
 
       if (tokens == null) {
-        console.log("Invalid role definition:", arn);
+        console.error(
+          print.warning(
+            "One or more policies contain an unusable role definition: %s. This usually happens when the resource contains a wildcard.",
+            arn
+          )
+        );
         return false;
       }
 
@@ -106,7 +113,7 @@ const listAssumableRoles = async () => {
     })
     .filter(Boolean);
 
-  console.log({ rolesInfo });
+  debug({ rolesInfo });
   return rolesInfo;
 };
 

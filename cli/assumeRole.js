@@ -1,4 +1,5 @@
 const AWS = require("aws-sdk");
+const debug = require("debug")("assumerole");
 
 const { spawn } = require("child_process");
 
@@ -6,6 +7,7 @@ const { getFederatedCredentials } = require("./federated");
 const { promptSelectRole } = require("./promptSelectRole");
 const { makeRoleArn } = require("./makeRoleArn");
 const { getRoleCredentials } = require("./getRoleCredentials");
+const { print } = require("./theme");
 
 const assumeRole = async opts => {
   const command = opts.cmd;
@@ -16,9 +18,9 @@ const assumeRole = async opts => {
   const args = opts.args || [];
 
   if (federated) {
-    console.log("Requesting federated login...");
+    debug("Requesting federated login...");
     await getFederatedCredentials();
-    console.log("Using", AWS.config.credentials.accessKeyId);
+    debug("Using", AWS.config.credentials.accessKeyId);
   }
 
   if (!roleName || !accountId) {
@@ -38,7 +40,24 @@ const assumeRole = async opts => {
     roleArn = makeRoleArn(opts);
   }
 
-  const credentials = await getRoleCredentials({ roleArn });
+  let credentials;
+
+  try {
+    credentials = await getRoleCredentials({ roleArn });
+  } catch (e) {
+    if (e.message === "Access denied") {
+      console.error(
+        print.error(
+          `${
+            e.message
+          }: This role (${roleArn}) cannot be assumed, check the role's trust relationship`
+        )
+      );
+      process.exit(4);
+    }
+    throw e;
+  }
+
   const env = Object.assign({}, process.env, {
     AWS_ACCESS_KEY_ID: credentials.AccessKeyId,
     AWS_SECRET_ACCESS_KEY: credentials.SecretAccessKey,
@@ -50,8 +69,8 @@ const assumeRole = async opts => {
   delete env.AWS_REGION;
   delete env.AWS_DEFAULT_REGION;
 
-  console.warn(`Welcome, ${roleName} at ${accountId}!`);
-  console.warn(`Running command: $ ${command} ${args.join(" ")}`);
+  console.log(print.title(`Welcome, ${roleName} at ${accountId}!`));
+  console.log(print.title(`Running command: $ ${command} ${args.join(" ")}`));
 
   const child = spawn(command, args, {
     env,

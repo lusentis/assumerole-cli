@@ -1,17 +1,12 @@
 const AWS = require("aws-sdk");
 const opn = require("opn");
 
-const config = require("./config").load();
+const configLoader = require("./config");
 const serverOnce = require("./serverOnce");
 const { getAccountAlias } = require("./account");
+const { print } = require("./theme");
 
-AWS.config.region = config.cognito.region;
-
-const authorizationUrl = config.providers.google.getAuthUrl({
-  clientId: config.oauth2.id,
-});
-
-const getCredentials = async ({ idToken }) => {
+const getCredentials = async ({ idToken, config }) => {
   const cognito = new AWS.CognitoIdentityCredentials({
     IdentityPoolId: config.cognito.identityPoolId,
     Logins: {
@@ -26,12 +21,18 @@ const getCredentials = async ({ idToken }) => {
   return { accessKeyId, secretAccessKey, sessionToken };
 };
 
-const getWebAccessTokenStep = async () => {
-  console.log("Open your browser to", authorizationUrl);
+const getWebAccessTokenStep = async ({ authorizationUrl }) => {
+  console.log(
+    print.title(
+      `\n\tOpen your browser at this URL, to complete authentication:\n\t${print.label.reset.white.underline(
+        authorizationUrl
+      )}\n`
+    )
+  );
   await opn(authorizationUrl, {});
 };
 
-const waitForResponseStep = async () => {
+const waitForResponseStep = async ({ config }) => {
   const { code } = await serverOnce();
   const exchangeRequestParams = {
     code,
@@ -47,19 +48,27 @@ const waitForResponseStep = async () => {
   return { idToken };
 };
 
-const getCredentialsStep = async ({ idToken }) => {
-  const credentials = await getCredentials({ idToken });
+const getCredentialsStep = async ({ config, idToken }) => {
+  const credentials = await getCredentials({ idToken, config });
 
   const alias = await getAccountAlias({});
-  console.log("Welcome to", alias);
+  console.log(print.heading("Welcome to", alias));
 
   return credentials;
 };
 
-const getFederatedCredentials = () =>
-  Promise.resolve()
-    .then(getWebAccessTokenStep)
-    .then(waitForResponseStep)
-    .then(getCredentialsStep);
+const getFederatedCredentials = async () => {
+  const config = configLoader.load();
+
+  AWS.config.region = config.cognito.region;
+  const authorizationUrl = config.providers.google.getAuthUrl({
+    clientId: config.oauth2.id,
+  });
+
+  await Promise.resolve()
+    .then(() => getWebAccessTokenStep({ authorizationUrl }))
+    .then(() => waitForResponseStep({ config }))
+    .then(({ idToken }) => getCredentialsStep({ config, idToken }));
+};
 
 module.exports = { getFederatedCredentials };

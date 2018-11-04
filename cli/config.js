@@ -4,6 +4,8 @@ const fs = require("fs");
 const opn = require("opn");
 const EDITOR = process.env.EDITOR || "code";
 
+const { print } = require("./theme");
+
 const providers = {
   google: require("./providers/google"),
 };
@@ -20,7 +22,7 @@ const openEditor = async ({ overwrite }) => {
     fs.writeFileSync(configFileLocation, configTemplate);
   }
 
-  console.log("Opening file for editing:", configFileLocation);
+  console.log(print.title("Opening file for editing:", configFileLocation));
   opn(configFileLocation, { app: EDITOR });
 };
 
@@ -31,15 +33,19 @@ const readFromFile = configFileLocation => {
   try {
     configFileContents = fs.readFileSync(configFileLocation, "utf-8");
   } catch (e) {
-    console.error("Configuration file not found at path", configFileLocation);
-    console.error(`Run "configure" to create a new one.`);
+    console.error(
+      print.error("Configuration file not found at path", configFileLocation)
+    );
+    console.error(print.error(`Run "configure" to create a new one.`));
     process.exit(3);
   }
 
   try {
     userConfiguration = JSON.parse(configFileContents);
   } catch (e) {
-    console.error("Fatal error: config file contains invalid JSON");
+    console.error(
+      print.error("Fatal error: config file contains invalid JSON")
+    );
     process.exit(1);
   }
 

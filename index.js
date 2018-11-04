@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 
 const yargs = require("yargs");
+const debug = require("debug")("assumerole");
 
 // const { version } = require("./package.json");
 const { openEditor } = require("./cli/config");
 const { assumeRole } = require("./cli/assumeRole");
+const { print } = require("./cli/theme");
 
 const printError = e => {
   if (e.message === "Missing credentials in config") {
     console.error(
-      `Missing credentials. For AssumeRole to work you need to specify AWS Credentials, for example by running 'aws configure', by exporting an AWS_PROFILE environment variable, or by setting AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.\nAny credentials provider supported by the NodeJS aws-sdk can be used with this tool. Read more: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-credentials-node.html`
+      print.error(
+        `\nMissing AWS credentials.\n\nFor AssumeRole to work you need to specify AWS Credentials, for example by running 'aws configure', by exporting an AWS_PROFILE environment variable, or by setting AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.\nAny credentials provider supported by the NodeJS aws-sdk can be used with this tool.\nIf you want to use federated login to AWS, try to pass the --federated flag.\n\nRead more: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-credentials-node.html\n`
+      )
     );
     return;
   }
 
-  console.error(e.message);
+  console.error(e);
 };
 
 const defaultShellCommand = () => process.env.SHELL;
@@ -91,7 +95,7 @@ const help = () => {
   console.log("");
 };
 
-console.log(argv);
+debug(argv);
 
 if (!argv.cmd) {
   argv.cmd = process.env.SHELL;

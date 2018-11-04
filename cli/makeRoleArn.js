@@ -1,4 +1,4 @@
 const makeRoleArn = ({ roleName, accountId }) =>
   `arn:aws:iam::${accountId}:role/${roleName}`;
 
-exports.makeRoleArn = makeRoleArn;
+module.exports = { makeRoleArn };

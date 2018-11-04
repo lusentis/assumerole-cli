@@ -1,20 +1,24 @@
 const AWS = require("aws-sdk");
+const debug = require("debug")("assumerole");
 
 const rl = require("readline").createInterface(process.stdin, process.stdout);
 
 const { listAssumableRoles } = require("./listAssumableRoles");
 const { getAccountAlias } = require("./account");
 const { makeRoleArn } = require("./makeRoleArn");
+const { print } = require("./theme");
 
 const getAccountAliases = async ({ roles }) => {
   const sts = new AWS.STS({});
   const aliasesMap = {};
+  const unassumableRoles = [];
 
-  console.log("master account", AWS.config.credentials.accessKeyId);
+  debug("original account", AWS.config.credentials.accessKeyId);
 
   await Promise.all(
-    roles.map(async ({ accountId, roleName }) => {
-      const roleArn = `arn:aws:iam::${accountId}/${roleName}`;
+    roles.map(async role => {
+      const { accountId, roleName } = role;
+      const roleArn = makeRoleArn({ accountId, roleName });
       let credentials;
 
       try {
@@ -27,45 +31,67 @@ const getAccountAliases = async ({ roles }) => {
           .promise();
         credentials = response.Credentials;
       } catch (e) {
-        console.error("Cannot assume role", roleArn, e.message);
+        debug("Cannot assume role", roleArn, e.message);
+        unassumableRoles.push(role);
         return;
       }
 
       try {
-        const iam = new AWS.IAM({ ...credentials });
+        const iam = new AWS.IAM({
+          accessKeyId: credentials.AccessKeyId,
+          secretAccessKey: credentials.SecretAccessKey,
+          sessionToken: credentials.SessionToken,
+        });
         const alias = await getAccountAlias({ iam });
         aliasesMap[accountId] = alias;
       } catch (e) {
-        console.error(
+        debug(
           roleArn,
           "has no access to iam:ListAccountAliases, cannot determine account alias"
         );
-        return;
+        if (!aliasesMap[accountId]) {
+          // do not override if we were able to detect this using
+          // another roleName
+          aliasesMap[accountId] = "unknown";
+        }
       }
     })
   );
 
-  return aliasesMap;
+  return { aliasesMap, unassumableRoles };
 };
 
 const promptSelectRole = async () => {
-  const roles = await listAssumableRoles();
-  const aliasesMap = await getAccountAliases({ roles });
+  let roles = await listAssumableRoles();
+  const { aliasesMap, unassumableRoles } = await getAccountAliases({ roles });
 
-  console.log("available roles:");
+  roles = roles.sort((a, b) => b.accountId - a.accountId);
+
+  console.log(print.title("\nAvailable roles in your account:"));
   roles.forEach((role, index) => {
-    console.log(`  [${index}] ${role.roleName} on ${role.accountId}`);
+    const alias = aliasesMap[role.accountId]
+      ? `${aliasesMap[role.accountId]} (${role.accountId})`
+      : role.accountId;
+
+    const warning = unassumableRoles.includes(role)
+      ? "[this role cannot be assumed]"
+      : "";
+
+    const msg = `  [${print.number(index)}] ${print.label(
+      alias
+    )} as ${print.label(role.roleName)} ${print.warning(warning)}`;
+
+    const styleModifier = warning ? print.dim : a => a;
+    console.log(styleModifier(msg));
   });
 
   const selectedIndex = await new Promise(resolve => {
-    rl.question(`Role? [0-${roles.length - 1}] `, choice => {
+    rl.question(print.title(`\nRole? [0-${roles.length - 1}] `), choice => {
       rl.close();
       resolve(Number(choice));
     });
   });
   const selectedRole = roles[selectedIndex];
-
-  console.log("selected role", selectedRole);
   return makeRoleArn(selectedRole);
 };
 
