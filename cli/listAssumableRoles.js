@@ -77,7 +77,26 @@ const listAssumableRoles = async () => {
 
   debug({ documents });
 
-  const statements = flatten(documents.map(d => d.Statement));
+  const inlinePolicyNames = await iam
+    .listRolePolicies({ RoleName: currentRoleName })
+    .promise();
+
+  debug({ inlinePolicyNames });
+
+  const inlineDocuments = await Promise.all(
+    inlinePolicyNames.PolicyNames.map(name =>
+      iam
+        .getRolePolicy({ RoleName: currentRoleName, PolicyName: name })
+        .promise()
+        .then(result => JSON.parse(decodeURIComponent(result.PolicyDocument)))
+    )
+  );
+
+  debug({ inlineDocuments });
+
+  const statements = flatten(
+    [...documents, ...inlineDocuments].map(d => d.Statement)
+  );
 
   debug({ statements });
 
