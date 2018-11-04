@@ -76,6 +76,7 @@ const assumeRole = async opts => {
 
   console.log(print.title(`Welcome, ${roleName} at ${accountId}!`));
   console.log(print.title(`Running command: $ ${command} ${args.join(" ")}`));
+  console.log(print.title(`Use CTRL-D or CTRL-C to terminate.`));
 
   const child = spawn(command, args, {
     env,
