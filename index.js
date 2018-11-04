@@ -1,75 +1,15 @@
 #!/usr/bin/env node
 
-const program = require("commander");
-const AWS = require("aws-sdk");
+const yargs = require("yargs");
 
-const { spawn } = require("child_process");
-
-const { version } = require("./package.json");
+// const { version } = require("./package.json");
 const { openEditor } = require("./cli/config");
-
-const makeRoleArn = ({ roleName, accountId }) =>
-  `arn:aws:iam::${accountId}:role/${roleName}`;
-
-const getRoleCredentials = async ({ roleArn }) => {
-  const sts = new AWS.STS({});
-  const response = await sts
-    .assumeRole({
-      RoleArn: roleArn,
-      RoleSessionName: "assumerole-cli",
-      DurationSeconds: 3600,
-    })
-    .promise();
-  // Credentials.AccessKeyId,Credentials.SecretAccessKey,Credentials.SessionToken
-  const credentials = response.Credentials;
-  return credentials;
-};
-
-const execute = async command => {
-  let roleArn = program.roleArn;
-  let roleName = program.roleName;
-  let accountId = program.accountId;
-  const args = program.args || [];
-
-  if (!roleArn) {
-    if (!roleName || !accountId) {
-      throw new Error(
-        `Error: You must specify either a --role-arn, or both --role-name and --account-id when running this command`
-      );
-    }
-    roleArn = makeRoleArn(program);
-  } else {
-    const arnParts = /^arn:aws:iam::(\d{12}):role\/(\w+)$/.exec(roleArn);
-    accountId = arnParts[1];
-    roleName = arnParts[2];
-  }
-
-  const credentials = await getRoleCredentials({ roleArn });
-  const env = Object.assign({}, process.env, {
-    AWS_ACCESS_KEY_ID: credentials.AccessKeyId,
-    AWS_SECRET_ACCESS_KEY: credentials.SecretAccessKey,
-    AWS_SESSION_TOKEN: credentials.SessionToken,
-  });
-  delete env.AWS_PROFILE;
-
-  console.warn(`Welcome, ${roleName} at ${accountId}!`);
-  console.warn(`Running command: $ ${command} ${args.join(" ")}`);
-
-  const child = spawn(command, args, {
-    env,
-    stdio: "inherit",
-    shell: process.env.SHELL,
-  });
-
-  child.on("exit", code => {
-    process.exit(code);
-  });
-};
+const { assumeRole } = require("./cli/assumeRole");
 
 const printError = e => {
   if (e.message === "Missing credentials in config") {
     console.error(
-      `Missing credentials. For AssumeRole to work you need to specify AWS Credentials, for example by running 'aws --configure', by exporting an AWS_PROFILE environment variable, or by setting AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.\nAny credentials provider supported by the NodeJS aws-sdk can be used with this tool. Read more: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-credentials-node.html`
+      `Missing credentials. For AssumeRole to work you need to specify AWS Credentials, for example by running 'aws configure', by exporting an AWS_PROFILE environment variable, or by setting AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.\nAny credentials provider supported by the NodeJS aws-sdk can be used with this tool. Read more: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-credentials-node.html`
     );
     return;
   }
@@ -79,53 +19,65 @@ const printError = e => {
 
 const defaultShellCommand = () => process.env.SHELL;
 
-program.version(version);
+const argv = yargs
+  .command("configure", "Creates an empty configuration file", args => {
+    args.option("overwrite", {
+      alias: "o",
+      type: "boolean",
+      default: "false",
+      global: false,
+    });
+  })
 
-// configure command
-program
-  .command("configure")
-  .description("Creates an empty configuration file")
-  .option("-o, --overwrite", "replaces the existing configuration file")
-  .action(opts =>
-    openEditor({
-      overwrite: Boolean(opts.overwrite),
-    }).catch(e => {
-      printError(e);
-      process.exit(1);
-    })
-  );
-
-// assumerole (default) command
-program
-  .command("assumerole")
-  .description("Assumes the specified role")
+  .command("", "Assumes a role")
+  .option("federated", {
+    type: "boolean",
+    alias: "f",
+    description: "Use federated login instead of static credentials",
+  })
+  .option("cmd", {
+    type: "string",
+    alias: "c",
+    description: "Execute <cmd> using the default shell",
+    default: defaultShellCommand(),
+  })
   .option(
-    "-c, --cmd <cmd>",
-    "Execute <cmd> using the default shell",
-    defaultShellCommand()
+    "role-arn",
+    { type: "string", alias: "r", description: "ARN of the Role to Assume" }
+    //    /^arn:aws:iam::\d{12}:role\/\w+$/i
   )
   .option(
-    "-r, --role-arn <arn:aws:iam::000000000000:role/YourRoleName>",
-    "ARN of the Role to Assume",
-    /^arn:aws:iam::\d{12}:role\/\w+$/i
+    "role-name",
+    {
+      type: "string",
+      alias: "n",
+      implies: "account-id",
+      conflicts: ["role-arn"],
+      description: "Name of the Role to assume",
+    }
+    // /^\w+$/i
   )
-  .option("-n, --role-name <RoleName>", "Name of the Role to assume", /^\w+$/i)
   .option(
-    "-a, --account-id <AccountId>",
-    "Account ID where Role is defined (mandatory if you specify --role-name)",
-    /^\d{12}$/
-  )
-  .action(() =>
-    execute(program.cmd).catch(e => {
-      printError(e);
-      process.exit(1);
-    })
-  );
+    "account-id",
+    {
+      type: "string",
+      alias: "a",
+      implies: "role-name",
+      conflicts: ["role-arn"],
+      description:
+        "Account ID where Role is defined (mandatory if you specify --role-name)",
+    }
+    // /^\d{12}$/
+  ).argv;
 
-program.on("--help", function() {
+const help = () => {
   console.log("");
   console.log("  Examples:");
   console.log("");
+  console.log("    $ assumerole --federated");
+  console.log(
+    "    $ assumerole --federated --account-id 00000000000 --role-name MyRole"
+  );
   console.log("    $ assumerole --account-id 00000000000 --role-name MyRole");
   console.log(
     "    $ assumerole --role-arn arn:aws:iam::00000000000:role/MyRole"
@@ -137,10 +89,35 @@ program.on("--help", function() {
     "    $ assumerole --role-arn arn:aws:iam::00000000000:role/MyRole -c bash -- --version"
   );
   console.log("");
-});
+};
 
-program.parse(process.argv);
+console.log(argv);
 
-if (!program.cmd) {
-  program.cmd = process.env.SHELL;
+if (!argv.cmd) {
+  argv.cmd = process.env.SHELL;
+}
+
+if (argv.help) {
+  help();
+  process.exit(0);
+}
+
+if (argv._.includes("configure")) {
+  openEditor({
+    overwrite: Boolean(argv.overwrite),
+  })
+    .then(() => {
+      process.exit(0);
+    })
+    .catch(e => {
+      printError(e);
+      process.exit(1);
+    });
+}
+
+if (argv._.includes("assumerole") || argv._.length === 0) {
+  assumeRole(argv).catch(e => {
+    printError(e);
+    process.exit(1);
+  });
 }

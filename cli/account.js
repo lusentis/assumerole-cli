@@ -7,8 +7,10 @@ const getAccountInfo = async () => {
   return info;
 };
 
-const getAccountAlias = async () => {
-  const iam = new AWS.IAM({});
+const getAccountAlias = async ({ iam }) => {
+  if (!iam) {
+    iam = new AWS.IAM({});
+  }
   const info = await iam.listAccountAliases().promise();
   const alias = info.AccountAliases[0];
   return alias;

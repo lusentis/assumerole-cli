@@ -50,15 +50,16 @@ const waitForResponseStep = async () => {
 const getCredentialsStep = async ({ idToken }) => {
   const credentials = await getCredentials({ idToken });
 
-  const alias = await getAccountAlias();
+  const alias = await getAccountAlias({});
   console.log("Welcome to", alias);
 
   return credentials;
 };
 
-Promise.resolve()
-  .then(getWebAccessTokenStep)
-  .then(waitForResponseStep)
-  .then(getCredentialsStep)
-  .then(credentials => console.log("AWS Credentials", credentials))
-  .catch(e => console.error(e));
+const getFederatedCredentials = () =>
+  Promise.resolve()
+    .then(getWebAccessTokenStep)
+    .then(waitForResponseStep)
+    .then(getCredentialsStep);
+
+module.exports = { getFederatedCredentials };
