@@ -14,6 +14,7 @@ const assumeRole = async opts => {
   let roleArn = opts.roleArn;
   let roleName = opts.roleName;
   let accountId = opts.accountId;
+  let accountLabel = "";
   const federated = opts.federated;
   const args = opts.args || [];
 
@@ -24,7 +25,7 @@ const assumeRole = async opts => {
   }
 
   if (!roleName || !accountId) {
-    roleArn = await promptSelectRole();
+    ({ roleArn, accountLabel } = await promptSelectRole());
     if (!roleArn) {
       throw new Error(
         `Error: We could not automatically discover a list of assumable roles. You must specify either a --role-arn, or both --role-name and --account-id when running this command`
@@ -58,10 +59,14 @@ const assumeRole = async opts => {
     throw e;
   }
 
+  const makeRPrompt = () =>
+    (process.env.RPROMPT || "") + `${accountLabel ? accountLabel : accountId}`;
+
   const env = Object.assign({}, process.env, {
     AWS_ACCESS_KEY_ID: credentials.AccessKeyId,
     AWS_SECRET_ACCESS_KEY: credentials.SecretAccessKey,
     AWS_SESSION_TOKEN: credentials.SessionToken,
+    RPROMPT: makeRPrompt(), // right prompt for ZSH
   });
 
   // Cleanup stale env variables

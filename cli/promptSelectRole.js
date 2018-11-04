@@ -65,19 +65,22 @@ const promptSelectRole = async () => {
   let roles = await listAssumableRoles();
   const { aliasesMap, unassumableRoles } = await getAccountAliases({ roles });
 
+  const makeLabel = role =>
+    aliasesMap[role.accountId]
+      ? `${aliasesMap[role.accountId]} (${role.accountId})`
+      : role.accountId;
+
   roles = roles.sort((a, b) => b.accountId - a.accountId);
 
   console.log(print.title("\nAvailable roles in your account:"));
   roles.forEach((role, index) => {
-    const alias = aliasesMap[role.accountId]
-      ? `${aliasesMap[role.accountId]} (${role.accountId})`
-      : role.accountId;
-
+    const alias = makeLabel(role);
     const warning = unassumableRoles.includes(role)
       ? "[this role cannot be assumed]"
       : "";
 
-    const msg = `  [${print.number(index)}] ${print.label(
+    const number = index < 10 ? ` ${index}` : `${index}`;
+    const msg = `  [${print.number(number)}] ${print.label(
       alias
     )} as ${print.label(role.roleName)} ${print.warning(warning)}`;
 
@@ -91,8 +94,12 @@ const promptSelectRole = async () => {
       resolve(Number(choice));
     });
   });
+
   const selectedRole = roles[selectedIndex];
-  return makeRoleArn(selectedRole);
+  return {
+    roleArn: makeRoleArn(selectedRole),
+    accountLabel: makeLabel(selectedRole),
+  };
 };
 
 module.exports = { promptSelectRole };
