@@ -58,9 +58,10 @@ const promptSelectRole = async () => {
   });
 
   const selectedIndex = await new Promise(resolve => {
-    rl.question(`Role? [0-${roles.length - 1}] `, choice =>
-      resolve(Number(choice))
-    );
+    rl.question(`Role? [0-${roles.length - 1}] `, choice => {
+      rl.close();
+      resolve(Number(choice));
+    });
   });
   const selectedRole = roles[selectedIndex];
 
