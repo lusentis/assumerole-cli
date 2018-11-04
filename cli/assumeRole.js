@@ -7,6 +7,7 @@ const { getFederatedCredentials } = require("./federated");
 const { promptSelectRole } = require("./promptSelectRole");
 const { makeRoleArn } = require("./makeRoleArn");
 const { getRoleCredentials } = require("./getRoleCredentials");
+const { getBrowserSwitchRoleUrl } = require("./getBrowserSwitchRoleUrl");
 const { print } = require("./theme");
 
 const assumeRole = async opts => {
@@ -16,7 +17,7 @@ const assumeRole = async opts => {
   let accountId = opts.accountId;
   let accountLabel = "";
   const federated = opts.federated;
-  const args = opts.args || [];
+  const args = opts._ || [];
 
   if (federated) {
     debug("Requesting federated login...");
@@ -74,9 +75,27 @@ const assumeRole = async opts => {
   delete env.AWS_REGION;
   delete env.AWS_DEFAULT_REGION;
 
-  console.log(print.title(`Welcome, ${roleName} at ${accountId}!`));
+  const browserSwitchRoleUrl = getBrowserSwitchRoleUrl({
+    accountLabel,
+    roleName,
+    accountId,
+  });
+
+  console.log("");
+  console.log(
+    print.title(
+      `Welcome, ${print.label(roleName)} at ${print.label(accountLabel)}!`
+    )
+  );
+  console.log(
+    `You can also assume this role in the AWS Console: ${print.title.reset.underline(
+      browserSwitchRoleUrl
+    )}`
+  );
+  console.log("");
   console.log(print.title(`Running command: $ ${command} ${args.join(" ")}`));
   console.log(print.title(`Use CTRL-D or CTRL-C to terminate.`));
+  console.log("");
 
   const child = spawn(command, args, {
     env,

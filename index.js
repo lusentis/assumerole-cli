@@ -117,11 +117,11 @@ if (argv._.includes("configure")) {
       printError(e);
       process.exit(1);
     });
+  return;
 }
 
-if (argv._.includes("assumerole") || argv._.length === 0) {
-  assumeRole(argv).catch(e => {
-    printError(e);
-    process.exit(1);
-  });
-}
+// default command:
+assumeRole(argv).catch(e => {
+  printError(e);
+  process.exit(1);
+});
