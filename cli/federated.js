@@ -24,7 +24,7 @@ const getCredentials = async ({ idToken, config }) => {
 const getWebAccessTokenStep = async ({ authorizationUrl }) => {
   console.log(
     print.title(
-      `\n\tOpen your browser at this URL, to complete authentication:\n\t${print.label.reset.white.underline(
+      `\nOpen your browser at this URL, to complete authentication:\n${print.label.reset.white.underline(
         authorizationUrl
       )}\n`
     )
