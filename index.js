@@ -72,7 +72,14 @@ const argv = yargs
         "Account ID where Role is defined (mandatory if you specify --role-name)",
     }
     // /^\d{12}$/
-  ).argv;
+  )
+  .option("restrict-ip", {
+    type: "boolean",
+    alias: "i",
+    default: true,
+    description:
+      "Restricts all permissions to the current IP Address (may break some services)",
+  }).argv;
 
 const help = () => {
   console.log("");

@@ -16,6 +16,7 @@ const assumeRole = async opts => {
   let roleArn = opts.roleArn;
   let roleName = opts.roleName;
   let accountId = opts.accountId;
+  let restrictIp = opts.restrictIp;
   let accountLabel = "";
   const federated = opts.federated;
   const args = opts._ || [];
@@ -46,7 +47,7 @@ const assumeRole = async opts => {
   let credentials;
 
   try {
-    credentials = await getRoleCredentials({ roleArn });
+    credentials = await getRoleCredentials({ roleArn, restrictIp });
   } catch (e) {
     if (e.message === "Access denied") {
       console.error(
