@@ -11,7 +11,7 @@ const providers = {
 };
 
 const getDefaultLocation = () =>
-  path.resolve(process.env.HOME, ".assumerole.json");
+  path.resolve(process.env.HOME || "", ".assumerole.json");
 
 const openEditor = async ({ overwrite }) => {
   const configFileLocation = getDefaultLocation();

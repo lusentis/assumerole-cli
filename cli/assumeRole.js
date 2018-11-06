@@ -2,6 +2,7 @@ const AWS = require("aws-sdk");
 const debug = require("debug")("assumerole");
 
 const { spawn } = require("child_process");
+const os = require("os");
 
 const { getFederatedCredentials } = require("./federated");
 const { promptSelectRole } = require("./promptSelectRole");
@@ -97,10 +98,11 @@ const assumeRole = async opts => {
   console.log(print.title(`Use CTRL-D or CTRL-C to terminate.`));
   console.log("");
 
+  const shell = os.platform() === "win32" ? false : process.env.SHELL;
   const child = spawn(command, args, {
     env,
     stdio: "inherit",
-    shell: process.env.SHELL,
+    shell,
   });
   child.on("exit", code => {
     process.exit(code);
