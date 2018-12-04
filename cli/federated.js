@@ -21,7 +21,7 @@ const getCredentials = async ({ idToken, config }) => {
   return { accessKeyId, secretAccessKey, sessionToken };
 };
 
-const getWebAccessTokenStep = async ({ authorizationUrl }) => {
+const getWebAccessTokenStep = ({ authorizationUrl }) => {
   console.log(
     print.title(
       `\nOpen your browser at this URL, to complete authentication:\n${print.label.reset.white.underline(
@@ -29,7 +29,7 @@ const getWebAccessTokenStep = async ({ authorizationUrl }) => {
       )}\n`
     )
   );
-  await opn(authorizationUrl, {});
+  return opn(authorizationUrl, { wait: false });
 };
 
 const waitForResponseStep = async ({ config }) => {
