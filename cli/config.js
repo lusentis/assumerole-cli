@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 
 const opn = require("opn");
 const EDITOR = process.env.EDITOR || "code";
@@ -10,8 +11,7 @@ const providers = {
   google: require("./providers/google"),
 };
 
-const getDefaultLocation = () =>
-  path.resolve(process.env.HOME || "", ".assumerole.json");
+const getDefaultLocation = () => path.resolve(os.homedir(), ".assumerole.json");
 
 const openEditor = async ({ overwrite }) => {
   const configFileLocation = getDefaultLocation();
