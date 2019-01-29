@@ -1,0 +1,10 @@
+{
+  "cognito": {
+    "region": "",
+    "identityPoolId": ""
+  },
+  "oauth2": {
+    "id": "",
+    "secret": ""
+  }
+}

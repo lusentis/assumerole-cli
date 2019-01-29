@@ -24,6 +24,9 @@ assumerole --role-arn arn:aws:iam::00000000000:role/MyRole -c aws s3 ls
 
 # Specify an command with --arguments:
 assumerole --role-arn arn:aws:iam::00000000000:role/MyRole -c bash -- --version
+
+# Use federated file config in ~/.assumerole.json:
+assumerole -f
 ```
 
 An optional `-c <command>` can be provided.
