@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const os = require("os");
 const yargs = require("yargs");
 const debug = require("debug")("assumerole");
 
@@ -21,7 +22,12 @@ const printError = e => {
   console.error(e);
 };
 
-const defaultShellCommand = () => process.env.SHELL;
+const defaultShellCommand = () => {
+  if (os.platform() === "win32") {
+    return "C:\\Program Files\\Git\\git-bash.exe";
+  }
+  return process.env.SHELL;
+};
 
 const argv = yargs
   .command("configure", "Creates an empty configuration file", args => {
@@ -105,7 +111,7 @@ const help = () => {
 debug(argv);
 
 if (!argv.cmd) {
-  argv.cmd = process.env.SHELL;
+  argv.cmd = defaultShellCommand();
 }
 
 if (argv.help) {
