@@ -84,8 +84,6 @@ const assumeRole = async opts => {
 
   // Cleanup stale env variables
   delete env.AWS_PROFILE;
-  delete env.AWS_REGION;
-  delete env.AWS_DEFAULT_REGION;
 
   const browserSwitchRoleUrl = getBrowserSwitchRoleUrl({
     accountLabel,
