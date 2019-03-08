@@ -1,65 +1,12 @@
-const AWS = require("aws-sdk");
 const debug = require("debug")("assumerole");
+exports.debug = debug;
 
 const rl = require("readline").createInterface(process.stdin, process.stdout);
 
 const { listAssumableRoles } = require("./listAssumableRoles");
-const { getAccountAlias } = require("./account");
 const { makeRoleArn } = require("./makeRoleArn");
 const { print } = require("./theme");
-
-const getAccountAliases = async ({ roles }) => {
-  const sts = new AWS.STS({});
-  const aliasesMap = {};
-  const unassumableRoles = [];
-
-  debug("original account", AWS.config.credentials.accessKeyId);
-
-  await Promise.all(
-    roles.map(async role => {
-      const { accountId, roleName } = role;
-      const roleArn = makeRoleArn({ accountId, roleName });
-      let credentials;
-
-      try {
-        const response = await sts
-          .assumeRole({
-            RoleArn: roleArn,
-            DurationSeconds: 900,
-            RoleSessionName: "assumerole-cli-temp",
-          })
-          .promise();
-        credentials = response.Credentials;
-      } catch (e) {
-        debug("Cannot assume role", roleArn, e.message);
-        unassumableRoles.push(role);
-        return;
-      }
-
-      try {
-        const iam = new AWS.IAM({
-          accessKeyId: credentials.AccessKeyId,
-          secretAccessKey: credentials.SecretAccessKey,
-          sessionToken: credentials.SessionToken,
-        });
-        const alias = await getAccountAlias({ iam });
-        aliasesMap[accountId] = alias;
-      } catch (e) {
-        debug(
-          roleArn,
-          "has no access to iam:ListAccountAliases, cannot determine account alias"
-        );
-        if (!aliasesMap[accountId]) {
-          // do not override if we were able to detect this using
-          // another roleName
-          aliasesMap[accountId] = "unknown";
-        }
-      }
-    })
-  );
-
-  return { aliasesMap, unassumableRoles };
-};
+const { getAccountAliases } = require("./getAccountAliases");
 
 const promptSelectRole = async () => {
   let roles = await listAssumableRoles();

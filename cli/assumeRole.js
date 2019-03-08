@@ -10,6 +10,8 @@ const { makeRoleArn } = require("./makeRoleArn");
 const { getRoleCredentials } = require("./getRoleCredentials");
 const { getBrowserSwitchRoleUrl } = require("./getBrowserSwitchRoleUrl");
 const { print } = require("./theme");
+const defaultShellCommand = require("./defaultShellCommand");
+const { getAccountAliases } = require("./getAccountAliases");
 
 const assumeRole = async opts => {
   const command = opts.cmd;
@@ -27,17 +29,25 @@ const assumeRole = async opts => {
     debug("Using", AWS.config.credentials.accessKeyId);
   }
 
-  if (!roleName || !accountId) {
+  if (!(roleName && accountId) && !roleArn) {
     ({ roleArn, accountLabel } = await promptSelectRole());
     if (!roleArn) {
       throw new Error(
         `Error: We could not automatically discover a list of assumable roles. You must specify either a --role-arn, or both --role-name and --account-id when running this command`
       );
     }
+  } else {
+    debug("Automatically selected role", roleArn);
+    const accountAliasObj = await getAccountAliases({
+      roles: [{ roleArn, accountId: "current" }],
+    });
+
+    debug("Alias for this account", accountAliasObj.aliasesMap.current);
+    accountLabel = accountAliasObj.aliasesMap.current;
   }
 
   if (roleArn) {
-    const arnParts = /^arn:aws:iam::(\d{12}):role\/(\w+)$/.exec(roleArn);
+    const arnParts = /^arn:aws:iam::(\d{12}):role\/(.+)$/.exec(roleArn);
     accountId = arnParts[1];
     roleName = arnParts[2];
   } else {
@@ -100,13 +110,31 @@ const assumeRole = async opts => {
   console.log("");
 
   const shell = os.platform() === "win32" ? false : process.env.SHELL;
-  const child = spawn(command, args, {
-    env,
-    stdio: "inherit",
-    shell,
-  });
-  child.on("exit", code => {
-    process.exit(code);
-  });
+  const isShell = command === defaultShellCommand();
+
+  const launch = () => {
+    const child = spawn(command, args, {
+      env,
+      stdio: "inherit",
+      shell,
+    });
+
+    child.on("exit", code => {
+      if (isShell && code === 0) {
+        console.log(
+          print.title(
+            `Respawning shell (${command} ${args}). Use 'exit 1' to terminate.`
+          )
+        );
+        return setTimeout(launch, 1000);
+      }
+
+      console.log(print.title(`Child process terminated.`));
+      process.exit(code);
+    });
+  };
+
+  launch();
 };
+
 exports.assumeRole = assumeRole;

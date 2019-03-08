@@ -57,17 +57,31 @@ const getCredentialsStep = async ({ config, idToken }) => {
   return credentials;
 };
 
+let cache;
+const useCache = async ({ authorizationUrl, config }) => {
+  if (cache) {
+    return cache;
+  }
+
+  cache = await Promise.resolve()
+    .then(() => getWebAccessTokenStep({ authorizationUrl }))
+    .then(() => waitForResponseStep({ config }));
+  return cache;
+};
+
 const getFederatedCredentials = async () => {
   const config = configLoader.load();
 
   AWS.config.region = config.cognito.region;
-  const authorizationUrl = config.providers.google.getAuthUrl({
-    clientId: config.oauth2.id,
-  });
+
+  const domainHintParam = config.domainHint ? "&hd=" + config.domainHint : "";
+  const authorizationUrl =
+    config.providers.google.getAuthUrl({
+      clientId: config.oauth2.id,
+    }) + domainHintParam;
 
   await Promise.resolve()
-    .then(() => getWebAccessTokenStep({ authorizationUrl }))
-    .then(() => waitForResponseStep({ config }))
+    .then(() => useCache({ authorizationUrl, config }))
     .then(({ idToken }) => getCredentialsStep({ config, idToken }));
 };
 

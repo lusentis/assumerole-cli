@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const os = require("os");
 const yargs = require("yargs");
 const debug = require("debug")("assumerole");
 
@@ -8,6 +7,7 @@ const debug = require("debug")("assumerole");
 const { openEditor } = require("./cli/config");
 const { assumeRole } = require("./cli/assumeRole");
 const { print } = require("./cli/theme");
+const defaultShellCommand = require("./cli/defaultShellCommand");
 
 const printError = e => {
   if (e.message === "Missing credentials in config") {
@@ -20,13 +20,6 @@ const printError = e => {
   }
 
   console.error(e);
-};
-
-const defaultShellCommand = () => {
-  if (os.platform() === "win32") {
-    return "C:\\Program Files\\Git\\git-bash.exe";
-  }
-  return process.env.SHELL;
 };
 
 const argv = yargs
@@ -53,7 +46,12 @@ const argv = yargs
   })
   .option(
     "role-arn",
-    { type: "string", alias: "r", description: "ARN of the Role to Assume" }
+    {
+      type: "string",
+      alias: "r",
+      description: "ARN of the Role to Assume",
+      default: process.env.ASSUMEROLE_ROLE_ARN,
+    }
     //    /^arn:aws:iam::\d{12}:role\/\w+$/i
   )
   .option(
