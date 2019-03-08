@@ -1,7 +1,7 @@
 const debug = require("debug")("assumerole");
 exports.debug = debug;
 
-const rl = require("readline").createInterface(process.stdin, process.stdout);
+const readline = require("readline");
 
 const { listAssumableRoles } = require("./listAssumableRoles");
 const { makeRoleArn } = require("./makeRoleArn");
@@ -36,6 +36,7 @@ const promptSelectRole = async () => {
   });
 
   const selectedIndex = await new Promise(resolve => {
+    const rl = readline.createInterface(process.stdin, process.stdout);
     rl.question(print.title(`\nRole? [0-${roles.length - 1}] `), choice => {
       rl.close();
       resolve(Number(choice));

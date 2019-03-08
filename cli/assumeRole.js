@@ -126,7 +126,7 @@ const assumeRole = async opts => {
             `Respawning shell (${command} ${args}). Use 'exit 1' to terminate.`
           )
         );
-        return setTimeout(launch, 1000);
+        return launch();
       }
 
       console.log(print.title(`Child process terminated.`));
