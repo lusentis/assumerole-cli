@@ -126,7 +126,7 @@ const listAssumableRoles = async () => {
       }
 
       return {
-        accountId: Number(tokens[1]),
+        accountId: tokens[1],
         roleName: tokens[2],
       };
     })
