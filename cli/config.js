@@ -8,7 +8,6 @@ const EDITOR = process.env.EDITOR || "code";
 const { print } = require("./theme");
 
 const providers = {
-  google: require("./providers/google"),
   okta: require("./providers/okta"),
 };
 

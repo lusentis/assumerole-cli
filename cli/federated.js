@@ -64,7 +64,8 @@ const waitForResponseStep = async ({ config }) => {
 
   const provider = getProvider();
   const idToken = await config.providers[provider].getAccessToken(
-    exchangeRequestParams
+    exchangeRequestParams,
+    config.cognito.authDomain
   );
 
   return { idToken };
@@ -97,11 +98,10 @@ const getFederatedCredentials = async () => {
   AWS.config.region = config.cognito.region;
 
   const provider = getProvider();
-  const domainHintParam = config.domainHint ? "&hd=" + config.domainHint : "";
-  const authorizationUrl =
-    config.providers[provider].getAuthUrl({
-      clientId: config.oauth2.id,
-    }) + domainHintParam;
+  const authorizationUrl = config.providers[provider].getAuthUrl({
+    clientId: config.cognito.appClientId,
+    authDomain: config.cognito.authDomain,
+  });
 
   await Promise.resolve()
     .then(() => useCache({ authorizationUrl, config }))
