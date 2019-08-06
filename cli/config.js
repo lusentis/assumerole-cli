@@ -8,7 +8,7 @@ const EDITOR = process.env.EDITOR || "code";
 const { print } = require("./theme");
 
 const providers = {
-  okta: require("./providers/okta"),
+  cognito: require("./providers/cognito"),
 };
 
 const getDefaultLocation = () => path.resolve(os.homedir(), ".assumerole.json");

@@ -44,4 +44,4 @@ const serverOnce = () =>
 
 module.exports = serverOnce;
 module.exports.port = port;
-module.exports.getRedirectURL = () => `http://127.0.0.1:${port}/callback`;
+module.exports.getRedirectURL = () => `http://localhost:${port}/callback`;
