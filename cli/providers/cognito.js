@@ -3,6 +3,8 @@
 
 const fetch = require("node-fetch");
 const qs = require("querystring");
+const debug = require("debug")("cognito");
+
 const { getRedirectURL } = require("../serverOnce");
 
 const getEndpoints = ({ authDomain }) => {
@@ -52,7 +54,7 @@ const getAccessToken = async ({ code, redirectUrl, clientId, authDomain }) => {
   const response = await result.json();
   const { id_token } = response;
 
-  console.log("response", response);
+  debug("response from token endpoint", response);
 
   return id_token;
 };
