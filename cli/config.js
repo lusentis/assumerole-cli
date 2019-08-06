@@ -9,6 +9,7 @@ const { print } = require("./theme");
 
 const providers = {
   google: require("./providers/google"),
+  okta: require("./providers/okta"),
 };
 
 const getDefaultLocation = () => path.resolve(os.homedir(), ".assumerole.json");

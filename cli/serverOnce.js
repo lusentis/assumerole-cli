@@ -6,11 +6,23 @@
 // 4. returns the parsed querystring
 //
 const http = require("http");
+const querystring = require("querystring");
 const port = 20819;
 
 const serverOnce = () =>
   new Promise(resolve => {
     const server = http.createServer((request, response) => {
+      const qs = querystring.parse(
+        request.url.substr(request.url.indexOf("?") + 1)
+      );
+      if (qs.error) {
+        response.writeHead(400, { "content-type": "application/json" });
+        response.write(JSON.stringify(qs, null, 2));
+        response.end();
+        server.close();
+        return;
+      }
+
       response.writeHead(200);
       response.write("Now go back to your terminal!");
       response.end();

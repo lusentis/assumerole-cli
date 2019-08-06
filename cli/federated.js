@@ -6,13 +6,34 @@ const serverOnce = require("./serverOnce");
 const { getAccountAlias } = require("./account");
 const { print } = require("./theme");
 
+const getProvider = () => {
+  const config = configLoader.load();
+  return config.oauth2.provider || "google";
+};
+
+const getLoginMapKey = provider => {
+  switch (provider) {
+    case "google":
+      return "accounts.google.com";
+    default:
+      return "digitalattitude.okta.com";
+  }
+};
+
 const getCredentials = async ({ idToken, config }) => {
-  const cognito = new AWS.CognitoIdentityCredentials({
+  const provider = getProvider();
+  const loginMapKey = getLoginMapKey(provider);
+
+  const cognitoParams = {
     IdentityPoolId: config.cognito.identityPoolId,
     Logins: {
-      "accounts.google.com": idToken,
+      [loginMapKey]: idToken,
     },
-  });
+  };
+
+  console.log("----> cognito Params", cognitoParams);
+
+  const cognito = new AWS.CognitoIdentityCredentials(cognitoParams);
   await cognito.getPromise();
 
   AWS.config.credentials = cognito;
@@ -41,7 +62,8 @@ const waitForResponseStep = async ({ config }) => {
     redirectUrl: serverOnce.getRedirectURL(),
   };
 
-  const idToken = await config.providers.google.getAccessToken(
+  const provider = getProvider();
+  const idToken = await config.providers[provider].getAccessToken(
     exchangeRequestParams
   );
 
@@ -74,9 +96,10 @@ const getFederatedCredentials = async () => {
 
   AWS.config.region = config.cognito.region;
 
+  const provider = getProvider();
   const domainHintParam = config.domainHint ? "&hd=" + config.domainHint : "";
   const authorizationUrl =
-    config.providers.google.getAuthUrl({
+    config.providers[provider].getAuthUrl({
       clientId: config.oauth2.id,
     }) + domainHintParam;
 

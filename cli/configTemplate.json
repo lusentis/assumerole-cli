@@ -1,10 +1,9 @@
 {
-  "cognito": {
-    "region": "",
-    "identityPoolId": ""
-  },
-  "oauth2": {
-    "id": "",
-    "secret": ""
+  "cognito2": {
+    "region": "eu-west-1",
+    "authDomain": "",
+    "identityPoolId": "",
+    "userPoolId": "",
+    "appClientId": ""
   }
 }
