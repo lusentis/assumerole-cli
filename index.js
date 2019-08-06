@@ -11,11 +11,7 @@ const defaultShellCommand = require("./cli/defaultShellCommand");
 
 const printError = e => {
   if (e.message === "Missing credentials in config") {
-    console.error(
-      print.error(
-        `\nMissing AWS credentials.\n\nFor AssumeRole to work you need to specify AWS Credentials, for example by running 'aws configure', by exporting an AWS_PROFILE environment variable, or by setting AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.\nAny credentials provider supported by the NodeJS aws-sdk can be used with this tool.\nIf you want to use federated login to AWS, try to pass the --federated flag.\n\nRead more: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-credentials-node.html\n`
-      )
-    );
+    console.error(print.error(`Could not obtain AWS credentials.`));
     return;
   }
 
@@ -32,12 +28,10 @@ const argv = yargs
     });
   })
 
-  .command("", "Assumes a role")
-  .option("federated", {
-    type: "boolean",
-    alias: "f",
-    description: "Use federated login instead of static credentials",
-  })
+  .command(
+    "",
+    "Requests signin via federated identities and list assumable role(s)"
+  )
   .option("cmd", {
     type: "string",
     alias: "c",
@@ -89,10 +83,8 @@ const help = () => {
   console.log("");
   console.log("  Examples:");
   console.log("");
-  console.log("    $ assumerole --federated");
-  console.log(
-    "    $ assumerole --federated --account-id 00000000000 --role-name MyRole"
-  );
+  console.log("    $ assumerole");
+  console.log("    $ assumerole --account-id 00000000000 --role-name MyRole");
   console.log("    $ assumerole --account-id 00000000000 --role-name MyRole");
   console.log(
     "    $ assumerole --role-arn arn:aws:iam::00000000000:role/MyRole"

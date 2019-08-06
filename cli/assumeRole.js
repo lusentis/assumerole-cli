@@ -20,14 +20,11 @@ const assumeRole = async opts => {
   let accountId = opts.accountId;
   let restrictIp = opts.restrictIp;
   let accountLabel = "";
-  const federated = opts.federated;
   const args = opts._ || [];
 
-  if (federated) {
-    debug("Requesting federated login...");
-    await getFederatedCredentials();
-    debug("Using", AWS.config.credentials.accessKeyId);
-  }
+  debug("Requesting federated login...");
+  await getFederatedCredentials();
+  debug("Using", AWS.config.credentials.accessKeyId);
 
   if (!(roleName && accountId) && !roleArn) {
     ({ roleArn, accountLabel } = await promptSelectRole());
