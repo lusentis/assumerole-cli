@@ -5,6 +5,16 @@ const debug = require("debug")("assumerole");
 const flatten = list =>
   list.reduce((a, b) => a.concat(Array.isArray(b) ? flatten(b) : b), []);
 
+const sortRoles = (a, b) => {
+  if (a.accountId > b.accountId) {
+    return 1;
+  }
+  if (a.accountId < b.accountId) {
+    return -1;
+  }
+  return a.roleName > b.roleName ? 1 : -1;
+};
+
 const onlyCustomerManagedPoliciesFilter = policyArn =>
   /^arn:aws:iam::\d{12}:policy/.test(policyArn);
 
@@ -130,7 +140,8 @@ const listAssumableRoles = async () => {
         roleName: tokens[2],
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort(sortRoles);
 
   debug({ rolesInfo });
   return rolesInfo;
