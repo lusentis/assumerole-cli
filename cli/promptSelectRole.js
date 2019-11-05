@@ -12,10 +12,13 @@ const promptSelectRole = async () => {
   let roles = await listAssumableRoles();
   const { aliasesMap, unassumableRoles } = await getAccountAliases({ roles });
 
+  const hh = new Date().getHours() + 1;
+  const mm = new Date().getMinutes();
+
   const makeLabel = role =>
     aliasesMap[role.accountId]
-      ? `${aliasesMap[role.accountId]} (${role.accountId})`
-      : role.accountId;
+      ? `${aliasesMap[role.accountId]} (${role.accountId}) epx: ${hh}:${mm}`
+      : `${role.accountId} epx: ${hh}:${mm}`;
 
   roles = roles.sort((a, b) => b.accountId - a.accountId);
 
